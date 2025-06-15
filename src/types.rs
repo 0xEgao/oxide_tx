@@ -1,6 +1,8 @@
 use crate::{
     U256,
-    crypto::{PublicKey, Singnature},
+    crypto::{PublicKey, Signature},
+    sha256::Hash,
+    util::MerkleRoot,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -11,6 +13,7 @@ pub struct Block {
     pub header: BlockHeader,
     pub transactions: Vec<Transaction>,
 }
+
 impl Block {
     pub fn new(header: BlockHeader, transactions: Vec<Transaction>) -> Self {
         Block {
@@ -19,8 +22,8 @@ impl Block {
         }
     }
 
-    pub fn hash(&self) {
-        unimplemented!()
+    pub fn hash(&self) -> Hash {
+        Hash::hash(self)
     }
 }
 
@@ -28,8 +31,8 @@ impl Block {
 pub struct BlockHeader {
     pub timestamp: DateTime<Utc>,
     pub nonce: u64,
-    pub prev_block_hash: [u8; 32],
-    pub merkle_root: [u8; 32],
+    pub prev_block_hash: Hash,
+    pub merkle_root: MerkleRoot,
     //a number which has to be > hash if this block (difficulty)
     pub target: U256,
 }
@@ -38,8 +41,8 @@ impl BlockHeader {
     pub fn new(
         timestamp: DateTime<Utc>,
         nonce: u64,
-        prev_block_hash: [u8; 32],
-        merkle_root: [u8; 32],
+        prev_block_hash: Hash,
+        merkle_root: MerkleRoot,
         target: U256,
     ) -> Self {
         BlockHeader {
@@ -51,8 +54,8 @@ impl BlockHeader {
         }
     }
 
-    pub fn hash(&self) {
-        unimplemented!()
+    pub fn hash(&self) -> Hash {
+        Hash::hash(self)
     }
 }
 
@@ -61,6 +64,7 @@ pub struct Transaction {
     pub inputs: Vec<TransactionInput>,
     pub outputs: Vec<TransactionOutput>,
 }
+
 impl Transaction {
     pub fn new(inputs: Vec<TransactionInput>, outputs: Vec<TransactionOutput>) -> Self {
         Transaction {
@@ -69,15 +73,15 @@ impl Transaction {
         }
     }
 
-    pub fn hash(&self) {
-        unimplemented!()
+    pub fn hash(&self) -> Hash {
+        Hash::hash(self)
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TransactionInput {
-    pub prev_transaction_output_hash: [u8; 32],
-    pub signature: Singnature,
+    pub prev_transaction_output_hash: Hash,
+    pub signature: Signature,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -88,11 +92,17 @@ pub struct TransactionOutput {
     //Compressed public keys 33bytes because they have 0x00 prefix
     pub pubkey: PublicKey,
 }
+impl TransactionOutput {
+    pub fn hash(&self) -> Hash {
+        Hash::hash(self)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Blockchain {
     pub blocks: Vec<Block>,
 }
+
 impl Blockchain {
     pub fn new() -> Self {
         Blockchain { blocks: vec![] }
