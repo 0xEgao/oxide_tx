@@ -1,4 +1,4 @@
-use ecdsa::{Signature as ECDSASignature, SigningKey, VerifyingKey, signature::Signer};
+use ecdsa::{Signature as ECDSASignature, SigningKey, VerifyingKey};
 use k256::Secp256k1;
 
 use serde::{Deserialize, Serialize};
