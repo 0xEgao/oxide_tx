@@ -28,6 +28,49 @@ impl Block {
     pub fn hash(&self) -> Hash {
         Hash::hash(self)
     }
+
+    pub fn verify_transactions(&self, utxos: &HashMap<Hash, TransactionOutput>) -> Result<()> {
+        if self.transactions.is_empty() {
+            return Err(BtcError::InvalidTransaction);
+        }
+
+        use std::collections::HashSet;
+
+        for transaction in &self.transactions {
+            let mut input_value = 0;
+            let mut output_value = 0;
+            let mut seen_inputs = HashSet::new();
+
+            for input in &transaction.inputs {
+                let prev_output = utxos.get(&input.prev_transaction_output_hash);
+
+                if prev_output.is_none() {
+                    return Err(BtcError::InvalidTransaction);
+                }
+                let prev_output = prev_output.unwrap();
+
+                if seen_inputs.contains(&input.prev_transaction_output_hash) {
+                    return Err(BtcError::InvalidTransaction);
+                }
+                seen_inputs.insert(input.prev_transaction_output_hash.clone());
+
+                if !input
+                    .signature
+                    .verify(&input.prev_transaction_output_hash, &prev_output.pubkey)
+                {
+                    return Err(BtcError::InvalidSignature);
+                }
+                input_value += prev_output.value;
+            }
+            for output in &transaction.outputs {
+                output_value += output.value;
+            }
+            if input_value < output_value {
+                return Err(BtcError::InvalidTransaction);
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -141,7 +184,7 @@ impl Blockchain {
             if block.header.timestamp <= last_block.header.timestamp {
                 return Err(BtcError::InvalidBlock);
             }
-            block.verify_transactions(self.block_height(), &self.utxos)?;
+            block.verify_transactions(&self.utxos)?;
         }
         self.blocks.push(block);
         Ok(())

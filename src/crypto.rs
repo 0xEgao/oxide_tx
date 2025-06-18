@@ -1,12 +1,32 @@
-use ecdsa::{Signature as ECDSASignature, SigningKey, VerifyingKey};
+use ecdsa::{
+    Signature as ECDSASignature, SigningKey, VerifyingKey, signature::SignerMut,
+    signature::Verifier,
+};
 use k256::Secp256k1;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+use crate::sha256::Hash;
+
+#[derive(Serialize, Deserialize, Clone, Debug, Copy)]
 pub struct Signature(ECDSASignature<Secp256k1>);
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+impl Signature {
+    pub fn sign_output(output_hash: &Hash, private_key: PrivateKey) -> Self {
+        let mut signing_key = private_key.0;
+        let signature = signing_key.sign(&output_hash.as_bytes());
+
+        Signature(signature)
+    }
+    pub fn verify(&self, output_hash: &Hash, public_key: &PublicKey) -> bool {
+        public_key
+            .0
+            .verify(&output_hash.as_bytes(), &self.0)
+            .is_ok()
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Copy)]
 pub struct PublicKey(VerifyingKey<Secp256k1>);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
