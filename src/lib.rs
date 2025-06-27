@@ -16,6 +16,8 @@ pub const INITIAL_REWARD: u64 = 50;
 //this halving interval is in terms of block
 pub const HALVING_INTERVAL: u64 = 210;
 
+//block time in secs
+pub const IDEAL_BLOCK_TIME: u64 = 10;
 //minium target
 pub const MIN_TARGET: U256 = U256([
     0xFFFF_FFFF_FFFF_FFFF,
